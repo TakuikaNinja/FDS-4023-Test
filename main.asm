@@ -35,7 +35,8 @@ Reset:
 		sta PPU_CTRL
 		
 Main:
-		jsr ProcessBGMode
+		jsr ReadOrDownPads								; read controllers + expansion port
+		jsr ProcessBGMode								; handle current state
 		jsr WaitForNMI
 		beq Main										; back to main loop
 	
@@ -55,8 +56,7 @@ NonMaskableInterrupt:
 		lda NeedDraw									; transfer Data to PPU if required
 		beq :+
 		
-		jsr WriteVRAMBuffer								; transfer data from VRAM buffer at $0302
-		jsr SetScroll									; reset scroll after PPUADDR writes
+		jsr DumpRegisters
 		dec NeedDraw
 		
 :
@@ -68,14 +68,10 @@ NonMaskableInterrupt:
 		dec NeedPPUMask
 
 :
-		lda FDS_IO_ENABLE_MIRROR						; set register I/O enable
-		sta FDS_IO_ENABLE
-		
 		dec NMIReady
-		jsr ReadOrDownPads								; read controllers + expansion port
 
 NotReady:
-		jsr SetScroll									; remember to set scroll on lag frames
+		jsr SetScroll
 		
 		pla												; restore X/Y/A
 		tay
@@ -124,14 +120,6 @@ InitNametable:
 		ldy #$00
 		jmp VRAMFill
 
-EnableNMI:
-		lda PPU_CTRL_MIRROR								; enable NMI
-		ora #%10000000
-		bit PPU_STATUS									; in case this was called with the vblank flag set
-		sta PPU_CTRL_MIRROR								; write to mirror first for thread safety
-		sta PPU_CTRL
-		rts
-
 WaitForNMI:
 		inc NMIReady
 :
@@ -144,7 +132,6 @@ ProcessBGMode:
 		lda Mode
 		jsr JumpEngine
 	.addr BGInit
-	.addr DumpRegisters
 	.addr HandleButtons
 
 ; Initialise background to display the program name
@@ -152,40 +139,26 @@ BGInit:
 		jsr DisableRendering
 		jsr WaitForNMI
 		jsr VRAMStructWrite
-	.addr Palettes
+	.addr BGData
 	
-		lda #%10000011									; reenable all registers for next frame
+		lda #%10000011									; reenable all registers
 		sta FDS_IO_ENABLE_MIRROR
 		
 		inc Mode										; next state
 		rts
 
-DumpRegisters:
-		ldy #$00
-@loop:
-		lda FDS_IRQ_TIMER_LOW,y
-		sta HexBuffer,y
-		iny
-		bpl @loop										; dump $80 bytes
-		
-		; Convert it into the VRAM buffer format, which is compatible with the VRAM struct format
-		; Have to do this nonsense because PrepareVRAMStrings (2D string copy) has a max of 15x15 tiles ($ff)
-		DisplayAddr := $2000 + (12 << 5) + 8
-	.repeat 8, I
-		vram_string DisplayAddr+I*32, HexBuffer+I*16, 16
-	.endrepeat
-		jsr DisableRendering
-		jsr WaitForNMI
-		jsr WriteVRAMBuffer
-		jsr VRAMStructWrite
-	.addr HexDumpAttributes
-		
-		; Set up sprites
-		jsr CopyBitfieldSprites
-		
-		inc Mode										; next state
-		jmp EnableRendering								; render next frame
-
+HandleButtons:
+		lda P1_PRESSED
+		and #(BUTTON_A | BUTTON_B)						; wait until A/B is newly pressed
+		beq :+
+		asl a											; move A/B bits to LSB
+		rol a
+		rol a
+		tay
+		lda Masks,y
+		eor FDS_IO_ENABLE_MIRROR
+		sta FDS_IO_ENABLE_MIRROR						; toggle register I/O enable
+:
 
 YPos := 43
 StartingXPos := 96
@@ -220,27 +193,37 @@ CopyBitfieldSprites:
 		inx
 		dey
 		bne @tile										; repeat for all 8 bits
-		rts
-
-HandleButtons:
-		lda P1_PRESSED
-		and #(BUTTON_A | BUTTON_B)						; wait until A/B is newly pressed
-		beq :+
-		asl a											; move A/B bits to LSB
-		rol a
-		rol a
-		tay
-		lda Masks,y
-		eor FDS_IO_ENABLE_MIRROR
-		sta FDS_IO_ENABLE_MIRROR						; toggle register I/O enable for next frame
-		dec Mode										; return to previous state
-:
-		rts
+		
+		inc NeedDraw
+		jmp EnableRendering								; render next frame
 
 Masks:
 	.byte %00000000, %00000010, %00000001, %00000011
 
+; Dump $4020~$409f into the nametable
+; Yup, we're unrolling this to dump the entire section in a single vblank
+.macro write_string ppu16, addr16
+	lda #>(ppu16)
+	sta PPU_ADDR
+	lda #<(ppu16)
+	sta PPU_ADDR
+	.repeat 16, I
+		lda addr16+I
+		sta PPU_DATA
+	.endrepeat
+.endmacro
+
+DumpRegisters:
+		lda FDS_IO_ENABLE_MIRROR
+		sta FDS_IO_ENABLE
+		DisplayAddr := $2000 + (12 << 5) + 8
+	.repeat 8, I
+		write_string DisplayAddr+I*32, FDS_IRQ_TIMER_LOW+I*16
+	.endrepeat
+		rts
+
 ; VRAM transfer structures
+BGData:
 
 ; Just write to all 16 entries so PPUADDR safely leaves the palette RAM region
 ; PPUADDR ends at $3F20 before the next write (avoids rare palette corruption)
@@ -256,8 +239,6 @@ Palettes:
 	.endrepeat
 .endproc
 PaletteDataSize = .sizeof(PaletteData)
-
-	encode_terminator
 
 HexDumpAttributes:
 	.dbyt $23da

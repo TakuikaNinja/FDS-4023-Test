@@ -43,6 +43,5 @@
 	VRAM_BUFFER_END: .res 1 ; holds end index of the buffer
 	VRAM_BUFFER: .res $fe ; actual buffer
 
-; hex dump buffer
-	HexBuffer: .res $80
+; rest of memory
 

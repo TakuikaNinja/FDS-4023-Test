@@ -2,7 +2,9 @@
 
 This program tests/displays the FDS' behaviour of read-only registers when toggling bits in $4023.
 
-NESdev forum post: 
+NESdev forum post: soon
+
+Hardware Recording from a Twin Famicom: soon
 
 ## Usage
 
@@ -26,7 +28,7 @@ A simple `make` should then work.
 
 - `Jroatch-chr-sheet.chr` was converted from the following placeholder CHR sheet: https://www.nesdev.org/wiki/File:Jroatch-chr-sheet.chr.png
   - It contains tiles from Generitiles by Drag, Cavewoman by Sik, and Chase by shiru.
-- `AccuracyCoin-Hex.chr` was taken from 100th_Coin's [AccuracyCoin]() test program.
+- `AccuracyCoin-Hex.chr` was taken from 100th_Coin's [AccuracyCoin](https://github.com/100thCoin/AccuracyCoin).
 - Hardware testing was done using a Sharp Twin Famicom + [FDSKey](https://github.com/ClusterM/fdskey).
 - The NESdev Wiki, Forums, and Discord have been a massive help. Kudos to everyone keeping this console generation alive!
 
