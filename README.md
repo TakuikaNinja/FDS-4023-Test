@@ -2,7 +2,7 @@
 
 This program tests/displays the FDS' behaviour of read-only registers when toggling bits in $4023.
 
-NESdev forum post: soon
+NESdev forum post: https://forums.nesdev.org/viewtopic.php?t=26313
 
 Hardware Recording from a Twin Famicom: soon
 
