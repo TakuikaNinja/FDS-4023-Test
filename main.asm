@@ -120,9 +120,13 @@ InitNametable:
 		ldy #$00
 		jmp VRAMFill
 
+; The DRAM refresh watchdog may or may not be enabled here, 
+; so we must manually call Delay131 while waiting on NMIs
+; Hopefully this reduces the risk of PRG-RAM decay...
 WaitForNMI:
 		inc NMIReady
 :
+		jsr Delay131									; refresh DRAM rows
 		lda NMIReady
 		bne :-
 		rts
@@ -220,7 +224,7 @@ DumpRegisters:
 	.repeat 8, I
 		write_string DisplayAddr+I*32, FDS_IRQ_TIMER_LOW+I*16
 	.endrepeat
-		rts
+		jmp Delay131									; refresh DRAM rows, just to be safe
 
 ; VRAM transfer structures
 BGData:
