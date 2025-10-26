@@ -12,10 +12,14 @@ $(GAME).fds: $(OBJ_FILES) fds.cfg
 
 dist: zip
 zip: $(ZIP_NAME).zip
-$(ZIP_NAME).zip:
-	zip -9 -u $(ZIP_NAME).zip $(GAME).fds README.md
+$(ZIP_NAME).zip: zip.in
+	zip -9 -u $@ -@ < $<
 
-.PHONY: clean diat zip
+zip.in: $(GAME).fds README.md
+	echo $(GAME).fds > $@
+	echo README.md >> $@
+
+.PHONY: clean dist zip
 
 clean:
 	rm -f *.o *.fds *.dbg *.nl *.map.txt *.labels.txt
