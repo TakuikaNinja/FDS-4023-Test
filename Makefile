@@ -1,4 +1,5 @@
 GAME=4023-test
+ZIP_NAME=FDS-4023-Test
 ASSEMBLER=ca65
 LINKER=ld65
 
@@ -9,7 +10,12 @@ all: $(GAME).fds
 $(GAME).fds: $(OBJ_FILES) fds.cfg
 	$(LINKER) -o $(GAME).fds -C fds.cfg $(OBJ_FILES) -m $(GAME).map.txt -Ln $(GAME).labels.txt --dbgfile $(GAME).dbg
 
-.PHONY: clean
+dist: zip
+zip: $(ZIP_NAME).zip
+$(ZIP_NAME).zip:
+	zip -9 -u $(ZIP_NAME).zip $(GAME).fds README.md
+
+.PHONY: clean diat zip
 
 clean:
 	rm -f *.o *.fds *.dbg *.nl *.map.txt *.labels.txt
