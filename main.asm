@@ -237,8 +237,14 @@ Palettes:
 	encode_length INC1, COPY, PaletteDataSize
 
 .proc PaletteData
+	; BG
 	.byte $0f, $0f, $0f, $0f ; blank entry to hide attribute blocks
-	.repeat 7
+	.repeat 3
+	.byte $0f, $20, $20, $20
+	.endrepeat
+	
+	; Sprites
+	.repeat 4
 	.byte $0f, $00, $10, $20
 	.endrepeat
 .endproc
