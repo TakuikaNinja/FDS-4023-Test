@@ -4,7 +4,7 @@ This program tests/displays the FDS' behaviour of read-only registers when toggl
 
 NESdev forum post: https://forums.nesdev.org/viewtopic.php?t=26313
 
-Hardware Recording from a Twin Famicom: soon
+Hardware Recording from a Twin Famicom: https://youtu.be/rbvNSA2-kNI
 
 ## Usage
 
